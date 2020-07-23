@@ -24,6 +24,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Get latest caddy
       id: caddy-version
+      shell: bash
       run: |
         export TOKEN=$(curl -fsSL "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/caddy:pull" | jq --raw-output '.token')
         export ITEMS=curl -fsSL -H "Authorization: Bearer $TOKEN" "https://registry.hub.docker.com/v2/library/caddy/manifests/builder" | jq .history[0].v1Compatibility -r | jq ".config.Env | .[]" -r
