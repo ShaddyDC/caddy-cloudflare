@@ -32,6 +32,14 @@ jobs:
         echo ::set-output name=latest_version::$CADDY_SOURCE_VERSION
         echo ::set-output name=current_version::$(<caddy.version)
         
-    - name: Update caddy
+    - name: Update caddy version file, commit and push
       if: steps.caddy-version.outputs.current_version != steps.caddy-version.outputs.latest_version
-      run: echo ${{ steps.caddy-version.outputs.latest_version }}
+      run: |
+        git config --global user.name 'Shaddy'
+        git config --global user.email 'shaddythefirst@gmail.com'
+        echo ${{ steps.caddy-version.outputs.latest_version }} > caddy.version
+        git add .
+        git commit -am "Automated update to ${{ steps.caddy-version.outputs.latest_version }}"
+        git tag ${{ steps.caddy-version.outputs.latest_version }}
+        git push
+        git push --tags
