@@ -34,4 +34,4 @@ jobs:
         
     - name: Update caddy
       if: steps.caddy-version.outputs.current_version != steps.caddy-version.outputs.latest_version
-      run: echo steps.caddy-version.outputs.latest_version
+      run: echo ${{ steps.caddy-version.outputs.latest_version }}
