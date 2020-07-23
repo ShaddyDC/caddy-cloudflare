@@ -1,0 +1,36 @@
+name: Update caddy
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+#  schedule:
+#    - cron: 0 0 * * *
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v2
+    - name: Get latest caddy
+      id: caddy-version
+      run: |
+        export TOKEN=$(curl -fsSL "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/caddy:pull" | jq --raw-output '.token')
+        export ITEMS=curl -fsSL -H "Authorization: Bearer $TOKEN" "https://registry.hub.docker.com/v2/library/caddy/manifests/builder" | jq .history[0].v1Compatibility -r | jq ".config.Env | .[]" -r
+        for x in $ITEMS; do if [[ "$x" == CADDY_SOURCE_VERSION=* ]]; then export "$x"; fi done
+        echo ::set-output name=latest_version::$CADDY_SOURCE_VERSION
+        echo ::set-output name=current_version::$(<caddy.version)
+        
+    - name: Update caddy
+      if: steps.caddy-version.outputs.current_version != steps.caddy-version.outputs.latest_version
+      run: echo steps.caddy-version.outputs.latest_version
