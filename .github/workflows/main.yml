@@ -27,7 +27,7 @@ jobs:
       shell: bash
       run: |
         export TOKEN=$(curl -fsSL "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/caddy:pull" | jq --raw-output '.token')
-        export ITEMS=curl -fsSL -H "Authorization: Bearer $TOKEN" "https://registry.hub.docker.com/v2/library/caddy/manifests/builder" | jq .history[0].v1Compatibility -r | jq ".config.Env | .[]" -r
+        export ITEMS=$(curl -fsSL -H "Authorization: Bearer $TOKEN" "https://registry.hub.docker.com/v2/library/caddy/manifests/builder" | jq .history[0].v1Compatibility -r | jq ".config.Env | .[]" -r)
         for x in $ITEMS; do if [[ "$x" == CADDY_SOURCE_VERSION=* ]]; then export "$x"; fi done
         echo ::set-output name=latest_version::$CADDY_SOURCE_VERSION
         echo ::set-output name=current_version::$(<caddy.version)
