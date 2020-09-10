@@ -27,19 +27,29 @@ jobs:
       shell: bash
       run: |
         export TOKEN=$(curl -fsSL "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/caddy:pull" | jq --raw-output '.token')
+        export CREATED=$(curl -fsSL -H "Authorization: Bearer $TOKEN" "https://registry.hub.docker.com/v2/library/caddy/manifests/builder" | jq .history[0].v1Compatibility -r | jq --raw-output '.created')
         export ITEMS=$(curl -fsSL -H "Authorization: Bearer $TOKEN" "https://registry.hub.docker.com/v2/library/caddy/manifests/builder" | jq .history[0].v1Compatibility -r | jq ".config.Env | .[]" -r)
         for x in $ITEMS; do if [[ "$x" == CADDY_SOURCE_VERSION=* ]]; then export "$x"; fi done
         echo ::set-output name=latest_version::$CADDY_SOURCE_VERSION
         echo ::set-output name=current_version::$(<caddy.version)
+        echo ::set-output name=latest_created::$CREATED
+        echo ::set-output name=current_created::$(<caddy.created)
         
     - name: Update caddy version file, commit and push
-      if: steps.caddy-version.outputs.current_version != steps.caddy-version.outputs.latest_version
+      if: steps.caddy-version.outputs.current_created != steps.caddy-version.outputs.latest_created
       run: |
         git config --global user.name 'Shaddy'
         git config --global user.email 'shaddythefirst@gmail.com'
         echo ${{ steps.caddy-version.outputs.latest_version }} > caddy.version
+        echo ${{ steps.caddy-version.outputs.latest_created }} > caddy.created
         git add .
         git commit -am "Automated update to ${{ steps.caddy-version.outputs.latest_version }}"
-        git tag ${{ steps.caddy-version.outputs.latest_version }}
         git push
+        
+    - name: Update tag
+      if: steps.caddy-version.outputs.current_version != steps.caddy-version.outputs.latest_version
+      run: |
+        git config --global user.name 'Shaddy'
+        git config --global user.email 'shaddythefirst@gmail.com'
+        git tag ${{ steps.caddy-version.outputs.latest_version }}
         git push --tags
