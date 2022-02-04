@@ -38,8 +38,8 @@ jobs:
     - name: Update caddy version file, commit and push
       if: steps.caddy-version.outputs.current_created != steps.caddy-version.outputs.latest_created
       run: |
-        git config --global user.name 'Shaddy'
-        git config --global user.email 'shaddythefirst@gmail.com'
+        git config --global user.name 'github-actions'
+        git config --global user.email 'github-actions@github.com'
         echo ${{ steps.caddy-version.outputs.latest_version }} > caddy.version
         echo ${{ steps.caddy-version.outputs.latest_created }} > caddy.created
         git add .
@@ -49,7 +49,7 @@ jobs:
     - name: Update tag
       if: steps.caddy-version.outputs.current_version != steps.caddy-version.outputs.latest_version
       run: |
-        git config --global user.name 'Shaddy'
-        git config --global user.email 'shaddythefirst@gmail.com'
+        git config --global user.name 'github-actions'
+        git config --global user.email 'github-actions@github.com'
         git tag ${{ steps.caddy-version.outputs.latest_version }}
         git push --tags
