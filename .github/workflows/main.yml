@@ -67,7 +67,7 @@ jobs:
   docker:
     name: Publish docker image
     needs: update
-    if: ${{ needs.update.outputs.updated }}
+    if: ${{ needs.update.outputs.updated || github.event_name == 'push' }}
 
     runs-on: ubuntu-latest
     permissions:
