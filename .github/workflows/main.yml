@@ -38,7 +38,8 @@ jobs:
         echo ::set-output name=latest_created::$CREATED
         echo ::set-output name=current_created::$(<caddy.created)
 
-        if [[ "$CADDY_VERSION" != "$(<caddy.version)" ]] then
+        if [[ "$CADDY_VERSION" != "$(<caddy.version)" ]]
+        then
           echo ::set-output name=updated::true
         else
           echo ::set-output name=updated::false
