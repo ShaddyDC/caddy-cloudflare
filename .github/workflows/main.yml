@@ -5,18 +5,21 @@ name: Update caddy
 on:
   push:
     branches: [ master ]
+    # Publish semver tags as releases.
+    tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ master ]
   schedule:
     - cron: 0 0 * * *
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  update:
+    name: Update known version
     runs-on: ubuntu-latest
+
+    outputs:
+      updated: ${{ steps.caddy-version.outputs.updated }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -34,6 +37,12 @@ jobs:
         echo ::set-output name=current_version::$(<caddy.version)
         echo ::set-output name=latest_created::$CREATED
         echo ::set-output name=current_created::$(<caddy.created)
+
+        if [[ "$CADDY_VERSION" != "$(<caddy.version)" ]] then
+          echo ::set-output name=updated::true
+        else
+          echo ::set-output name=updated::false
+        fi
         
     - name: Update caddy version file, commit and push
       if: steps.caddy-version.outputs.current_created != steps.caddy-version.outputs.latest_created
@@ -53,3 +62,45 @@ jobs:
         git config --global user.email 'github-actions@github.com'
         git tag ${{ steps.caddy-version.outputs.latest_version }}
         git push --tags
+
+  docker:
+    name: Publish docker image
+    needs: update
+    if: ${{ needs.update.outputs.updated }}
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Login against a Docker registry except on PR
+      # https://github.com/docker/login-action
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@28218f9b04b4f3f62068d7b6ce6ca5b26e35336c
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      # Build and push Docker image with Buildx (don't push on PR)
+      # https://github.com/docker/build-push-action
+      - name: Build and push Docker image
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
