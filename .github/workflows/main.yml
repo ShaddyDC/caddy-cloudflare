@@ -37,16 +37,16 @@ jobs:
         export CREATED=$(curl -fsSL -H "Authorization: Bearer $TOKEN" "https://registry.hub.docker.com/v2/library/caddy/manifests/builder" | jq .history[0].v1Compatibility -r | jq --raw-output '.created')
         export ITEMS=$(curl -fsSL -H "Authorization: Bearer $TOKEN" "https://registry.hub.docker.com/v2/library/caddy/manifests/builder" | jq .history[0].v1Compatibility -r | jq ".config.Env | .[]" -r)
         for x in $ITEMS; do if [[ "$x" == CADDY_VERSION=* ]]; then export "$x"; fi done
-        echo ::set-output name=latest_version::$CADDY_VERSION
-        echo ::set-output name=current_version::$(<caddy.version)
-        echo ::set-output name=latest_created::$CREATED
-        echo ::set-output name=current_created::$(<caddy.created)
+        echo "latest_version=$CADDY_VERSION" >> $GITHUB_OUTPUT
+        echo "current_version=$(<caddy.version)" >> $GITHUB_OUTPUT
+        echo "latest_created=$CREATED" >> $GITHUB_OUTPUT
+        echo "current_created=$(<caddy.created)" >> $GITHUB_OUTPUT
 
         if [[ "$CADDY_VERSION" != "$(<caddy.version)" ]]
         then
-          echo ::set-output name=updated::true
+          echo "updated=true" >> $GITHUB_OUTPUT
         else
-          echo ::set-output name=updated::false
+          echo "updated=false" >> $GITHUB_OUTPUT
         fi
         
     - name: Update caddy version file, commit and push
