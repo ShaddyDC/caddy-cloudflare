@@ -32,23 +32,8 @@ jobs:
     - name: Get latest caddy
       id: caddy-version
       shell: bash
-      run: |
-        export TOKEN=$(curl -fsSL "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/caddy:pull" | jq --raw-output '.token')
-        export CREATED=$(curl -fsSL -H "Authorization: Bearer $TOKEN" "https://registry.hub.docker.com/v2/library/caddy/manifests/builder" | jq .history[0].v1Compatibility -r | jq --raw-output '.created')
-        export ITEMS=$(curl -fsSL -H "Authorization: Bearer $TOKEN" "https://registry.hub.docker.com/v2/library/caddy/manifests/builder" | jq .history[0].v1Compatibility -r | jq ".config.Env | .[]" -r)
-        for x in $ITEMS; do if [[ "$x" == CADDY_VERSION=* ]]; then export "$x"; fi done
-        echo "latest_version=$CADDY_VERSION" >> $GITHUB_OUTPUT
-        echo "current_version=$(<caddy.version)" >> $GITHUB_OUTPUT
-        echo "latest_created=$CREATED" >> $GITHUB_OUTPUT
-        echo "current_created=$(<caddy.created)" >> $GITHUB_OUTPUT
+      run: ./fetch-versions.sh
 
-        if [[ "$CADDY_VERSION" != "$(<caddy.version)" ]]
-        then
-          echo "updated=true" >> $GITHUB_OUTPUT
-        else
-          echo "updated=false" >> $GITHUB_OUTPUT
-        fi
-        
     - name: Update caddy version file, commit and push
       if: steps.caddy-version.outputs.current_created != steps.caddy-version.outputs.latest_created
       run: |
